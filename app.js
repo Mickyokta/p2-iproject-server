@@ -3,14 +3,75 @@ const app = express()
 const port = 3000
 const cors = require('cors')
 const axios = require('axios')
+const session = require('express-session');
+const passport = require('passport');
+const passportSteam = require('passport-steam');
+const SteamStrategy = passportSteam.Strategy;
 
+let clientUrl = "http://localhost:5173"
+
+app.use(session({
+    secret: 'doyouremember21stnightofseptember',
+    saveUninitialized: true,
+    resave: false,
+    cookie: {
+        maxAge: 3600000
+    }
+}))
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
+passport.serializeUser((user, done) => {
+    done(null, user);
+});
+passport.deserializeUser((user, done) => {
+    done(null, user);
+});
+
+passport.use(new SteamStrategy({
+    returnURL: 'http://localhost:' + port + '/api/auth/steam/return',
+    realm: 'http://localhost:' + port + '/',
+    apiKey: "F1302108B306E57C283431CD924D0FAF"
+}, function (identifier, profile, done) {
+    process.nextTick(function () {
+        profile.identifier = identifier;
+        return done(null, profile);
+    });
+}
+));
+
+app.get('/', async (req, res, next) => {
+    try {
+        res.redirect(`/headers?steamid=${req.user["_json"].steamid}`)
+    } catch (err) {
+        console.log(err)
+    }
+});
+
+app.get('/headers', async (req, res, next) => {
+    try {
+        let { steamid } = req.query
+        res.redirect(`${clientUrl}/steamlogin?steamid=${steamid}`)
+    } catch (err) {
+        console.log(err)
+    }
+})
+
+app.get('/api/auth/steam', passport.authenticate('steam', { failureRedirect: '/' }), function (req, res) {
+    res.redirect('/')
+});
+
+app.get('/api/auth/steam/return', passport.authenticate('steam', { failureRedirect: '/' }), function (req, res) {
+    res.redirect('/')
+});
+
 app.get('/splitgate', async (req, res, next) => {
     try {
-        let userSteamId64 = "76561199189571838"
+        let currentUser = req.user["_json"]
+        let userSteamId64 = currentUser.steamid
         let { data } = await axios.get(`https://public-api.tracker.gg/v2/splitgate/standard/profile/steam/${userSteamId64}`, { headers: { "TRN-Api-Key": "0962ef8c-e74e-49ee-8463-892cbfde70c9", "Accept-Encoding": "gzip", Accept: "application/json" } })
         data = data.data
         let user = {
@@ -89,7 +150,6 @@ app.get('/splitgate', async (req, res, next) => {
                 user.allTimeData.stats[stat] = "0"
             }
         }
-        console.log(user)
         res.status(200).json(data)
     } catch (err) {
         res.send(err)
