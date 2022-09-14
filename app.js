@@ -10,7 +10,6 @@ let { Videos } = require('./models/index.js')
 const SteamStrategy = passportSteam.Strategy;
 const { createServer } = require("http");
 const { Server } = require("socket.io");
-
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
@@ -18,29 +17,22 @@ const io = new Server(httpServer, {
     }
 });
 
-io.on("connection", (socket) => {
-    socket.emit("position", position)
-    socket.on("move", data => {
-        if (data == "left") {
-            position.x -= 10
-            io.emit("position", position)
-        }
-        if (data == "right") {
-            position.x += 10
-            io.emit("position", position)
-        }
-        if (data == "up") {
-            position.y -= 10
-            io.emit("position", position)
-        }
-        if (data == "down") {
-            position.y += 10
-            io.emit("position", position)
-        }
-    })
-});
-
 let clientUrl = "http://localhost:5173"
+let serverUrl = "http://localhost:3000"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 app.use(session({
     secret: 'doyouremember21stnightofseptember',
@@ -56,10 +48,6 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
-let position = {
-    x: 200,
-    y: 200
-}
 
 passport.serializeUser((user, done) => {
     done(null, user);
@@ -69,8 +57,8 @@ passport.deserializeUser((user, done) => {
 });
 
 passport.use(new SteamStrategy({
-    returnURL: 'http://localhost:' + port + '/api/auth/steam/return',
-    realm: 'http://localhost:' + port + '/',
+    returnURL: serverUrl + '/api/auth/steam/return',
+    realm: serverUrl + '/',
     apiKey: "F1302108B306E57C283431CD924D0FAF"
 }, function (identifier, profile, done) {
     process.nextTick(function () {
@@ -220,9 +208,8 @@ app.delete('/videos', async (req, res, next) => {
         console.log(err)
     }
 })
-// app.listen(port, () => {
-//     console.log(`Example app listening on port ${port}`)
-// })
-httpServer.listen(3000, () => {
+
+
+httpServer.listen(port, () => {
     console.log("HTTP running")
 })
