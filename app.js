@@ -6,7 +6,39 @@ const axios = require('axios')
 const session = require('express-session');
 const passport = require('passport');
 const passportSteam = require('passport-steam');
+let { Videos } = require('./models/index.js')
 const SteamStrategy = passportSteam.Strategy;
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+    cors: {
+        origin: '*',
+    }
+});
+
+io.on("connection", (socket) => {
+    socket.emit("position", position)
+    socket.on("move", data => {
+        if (data == "left") {
+            position.x -= 10
+            io.emit("position", position)
+        }
+        if (data == "right") {
+            position.x += 10
+            io.emit("position", position)
+        }
+        if (data == "up") {
+            position.y -= 10
+            io.emit("position", position)
+        }
+        if (data == "down") {
+            position.y += 10
+            io.emit("position", position)
+        }
+    })
+});
 
 let clientUrl = "http://localhost:5173"
 
@@ -23,6 +55,11 @@ app.use(passport.session());
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
+
+let position = {
+    x: 200,
+    y: 200
+}
 
 passport.serializeUser((user, done) => {
     done(null, user);
@@ -45,20 +82,12 @@ passport.use(new SteamStrategy({
 
 app.get('/', async (req, res, next) => {
     try {
-        res.redirect(`/headers?steamid=${req.user["_json"].steamid}`)
+        console.log(req.user)
+        res.redirect(`${clientUrl}/steamlogin?steamid=${req.user["_json"].steamid}&username=${req.user["_json"].personaname}&avatar=${req.user["_json"].avatarmedium}`)
     } catch (err) {
         console.log(err)
     }
 });
-
-app.get('/headers', async (req, res, next) => {
-    try {
-        let { steamid } = req.query
-        res.redirect(`${clientUrl}/steamlogin?steamid=${steamid}`)
-    } catch (err) {
-        console.log(err)
-    }
-})
 
 app.get('/api/auth/steam', passport.authenticate('steam', { failureRedirect: '/' }), function (req, res) {
     res.redirect('/')
@@ -70,8 +99,7 @@ app.get('/api/auth/steam/return', passport.authenticate('steam', { failureRedire
 
 app.get('/splitgate', async (req, res, next) => {
     try {
-        let currentUser = req.user["_json"]
-        let userSteamId64 = currentUser.steamid
+        let userSteamId64 = req.headers.steamid
         let { data } = await axios.get(`https://public-api.tracker.gg/v2/splitgate/standard/profile/steam/${userSteamId64}`, { headers: { "TRN-Api-Key": "0962ef8c-e74e-49ee-8463-892cbfde70c9", "Accept-Encoding": "gzip", Accept: "application/json" } })
         data = data.data
         let user = {
@@ -149,14 +177,52 @@ app.get('/splitgate', async (req, res, next) => {
             if (user.allTimeData.stats[stat] == null) {
                 user.allTimeData.stats[stat] = "0"
             }
+            user.allTimeData.stats[stat] = user.allTimeData.stats[stat].replace(',', '')
         }
-        res.status(200).json(data)
+        console.log(user)
+        res.status(200).json({ user })
     } catch (err) {
         res.send(err)
         console.log(err)
     }
 })
 
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
+app.get('/videos', async (req, res, next) => {
+    try {
+        let videos = await Videos.findAll()
+        res.status(200).json(videos)
+    } catch (err) {
+        console.log(err)
+    }
+})
+
+app.post('/videos', async (req, res, next) => {
+    try {
+        let { videoUrl, videoTitle, videoImg } = req.body
+        console.log(videoImg, videoTitle, videoUrl)
+        let data = await Videos.create({ videoUrl, videoTitle, videoImg })
+        console.log(`sukses ${data}`)
+        res.status(201).json({ message: `Successfully added new video` })
+    } catch (err) {
+        console.log(err)
+    }
+})
+
+app.delete('/videos', async (req, res, next) => {
+    try {
+        let { title } = req.query
+        let data = await Videos.destroy({ where: { videoTitle: title } })
+        if (!data) {
+            throw { name: "Video Not Found" }
+        }
+        res.status(200).json({ message: `Successfully delete ${title} from videos` })
+    } catch (err) {
+        console.log(err)
+    }
+})
+// app.listen(port, () => {
+//     console.log(`Example app listening on port ${port}`)
+// })
+httpServer.listen(3000, () => {
+    console.log("HTTP running")
 })
