@@ -19,7 +19,7 @@ const io = new Server(httpServer, {
     }
 });
 
-let clientUrl = "http://localhost:5173"
+let clientUrl = "https://gatekeeper-iproj.web.app"
 let serverUrl = "https://gatekeeper-iproj.herokuapp.com"
 
 let users = {}
