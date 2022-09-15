@@ -92,63 +92,63 @@ class Controller {
             next(err)
         }
     }
-    static async getVideos(req, res, next) {
-        try {
-            let videos = await Videos.findAll()
-            res.status(200).json(videos)
-        } catch (err) {
-            next(err)
-        }
-    }
-    static async postVideo(req, res, next) {
-        try {
-            let { videoUrl, videoTitle, videoImg } = req.body
-            if (!videoUrl || !videoTitle || !videoImg) {
-                throw { name: "Video url, Video title, and Video Image is required" }
-            }
-            await Videos.create({ videoUrl, videoTitle, videoImg })
-            res.status(201).json({ message: `Successfully added new video` })
-        } catch (err) {
-            next(err)
-        }
-    }
-    static async deleteVideo(req, res, next) {
-        try {
-            let { title } = req.query
-            let data = await Videos.destroy({ where: { videoTitle: title } })
-            if (!data) {
-                throw { name: "Video Not Found" }
-            }
-            res.status(200).json({ message: `Successfully delete ${title} from videos` })
-        } catch (err) {
-            next(err)
-        }
-    }
-    static async getOneVideo(req, res, next) {
-        try {
-            let { id } = req.params
-            let video = await Videos.findByPk(+id)
-            if (!video) {
-                throw { name: "Video Not Found" }
-            }
-            res.status(200).json(video)
-        } catch (err) {
-            next(err)
-        }
-    }
-    static async changeVideoTitle(req, res, next) {
-        try {
-            let { videoTitle } = req.body
-            let { id } = req.params
-            let updated = await Videos.update({ videoTitle }, { where: { id } })
-            if (!updated) {
-                throw { name: "Video Not Found" }
-            }
-            res.status(200).json({ message: `Video title successfully updated!` })
-        } catch (err) {
-            next(err)
-        }
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 module.exports = Controller
