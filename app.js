@@ -20,7 +20,7 @@ const io = new Server(httpServer, {
 });
 
 let clientUrl = "http://localhost:5173"
-let serverUrl = "http://localhost:3000"
+let serverUrl = "https://gatekeeper-iproj.herokuapp.com"
 
 let users = {}
 io.on("connection", (socket) => {
