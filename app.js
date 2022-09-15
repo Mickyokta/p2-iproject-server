@@ -22,6 +22,21 @@ const io = new Server(httpServer, {
 let clientUrl = "http://localhost:5173"
 let serverUrl = "http://localhost:3000"
 
+let users = {}
+io.on("connection", (socket) => {
+    socket.on("new-user", (user) => {
+        users[socket.id] = user
+        socket.broadcast.emit("user-connected", user)
+    })
+    socket.on("send-chat-message", (message) => {
+        socket.broadcast.emit('chat-message', { message: message, user: users[socket.id] })
+    })
+    socket.on("disconnect", () => {
+        socket.broadcast.emit("user-disconnected", users[socket.id])
+        delete users[socket.id]
+    })
+});
+
 app.use(session({
     secret: 'doyouremember21stnightofseptember',
     saveUninitialized: true,
